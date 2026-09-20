@@ -1,0 +1,94 @@
+table RFM_number
+	lineageTag: adcc60a9-9951-466c-a47b-25ca1d7805b0
+
+	measure 'Total Revenue' = sum(RFM_number[USD])
+		formatString: \$#,0.###############;(\$#,0.###############);\$#,0.###############
+		lineageTag: e1391879-95bd-464a-badb-227f3f82b5ef
+
+	measure 'Money spent in each purchase' = [Total Revenue]/sum(RFM_number[frequency])
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 0958badd-e815-46b4-b396-da672ca8ee87
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	measure Number_purchase = ```
+			divide(sum(RFM_number[frequency]), DISTINCTCOUNT(RFM_number[customerid]),0) 
+			```
+		lineageTag: 7ec2165a-80bb-4f03-9771-1bc3abaf5edf
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column customerid
+		dataType: int64
+		formatString: 0
+		lineageTag: 2cb0688a-89bd-41db-8b2e-ad01decc9dcc
+		summarizeBy: sum
+		sourceColumn: customerid
+
+		annotation SummarizationSetBy = Automatic
+
+	column recency
+		dataType: int64
+		formatString: 0
+		lineageTag: 5cd92867-9b36-4ad0-b6ff-b04d1d5fc2cc
+		summarizeBy: sum
+		sourceColumn: recency
+
+		annotation SummarizationSetBy = Automatic
+
+	column frequency
+		dataType: int64
+		formatString: 0
+		lineageTag: 7ce8b491-f226-4ee5-abef-9276fbed05c4
+		summarizeBy: sum
+		sourceColumn: frequency
+
+		annotation SummarizationSetBy = Automatic
+
+	column monetary
+		dataType: int64
+		formatString: 0
+		lineageTag: 1565e7cf-e6e9-4a26-a011-59429d04f1c3
+		summarizeBy: sum
+		sourceColumn: monetary
+
+		annotation SummarizationSetBy = Automatic
+
+	column RFM
+		dataType: int64
+		formatString: 0
+		lineageTag: 42dff624-8e92-4a80-9059-757ede8da102
+		summarizeBy: sum
+		sourceColumn: RFM
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Customer Segment'
+		dataType: string
+		lineageTag: 0e50e773-d1af-4266-be03-ca883fd5c3f1
+		summarizeBy: none
+		sourceColumn: Customer Segment
+
+		annotation SummarizationSetBy = Automatic
+
+	column USD = RFM_number[monetary]/25000
+		lineageTag: 8a6fabe7-ab1a-429a-b426-48b1c654d84a
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition RFM_number = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\VICTUS\Desktop\RFM_number.csv"),[Delimiter=",", Columns=6, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"customerid", Int64.Type}, {"recency", Int64.Type}, {"frequency", Int64.Type}, {"monetary", Int64.Type}, {"RFM", Int64.Type}, {"customer_segment", type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"customer_segment", "Customer Segment"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+
